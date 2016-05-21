@@ -22,13 +22,10 @@ class MysqlClient(config: Config) {
   val db = config.getString("mysql.db")
 
 
-  val autoIncValuesForTable: Map[String, Array[String]] = Map("AlgorithmConfs" -> Array("confId"),
-    "DataSources" -> Array("sourceId"),
-    "FeatureGroupFields" -> Array("id"),
-    "FeatureGroups" -> Array("featureGroupId"),
-    "Fields" -> Array("fieldId"),
-    "Permissions" -> Array("permissionId"),
-    "Users" -> Array("UserId"))
+  val autoIncValuesForTable: Map[String, Array[String]] = Map(
+    "fields" -> Array("fieldId"),
+    "sources" -> Array("sourceId")
+  )
 
   private val dbc = "jdbc:mysql://" + host + ":" + port + "/" + db + "?user=" + user + "&password=" + password
   classOf[com.mysql.jdbc.Driver]

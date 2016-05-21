@@ -11,6 +11,7 @@ import spray.json.{JsNumber, JsString, JsObject}
   */
 class Field(
              val fieldId: Long = 0,
+             val sourceId: Long,
              val fieldName: String,
              val dataType: String, //double,long,string
              val valueType: String, // dimension,metrics,time
@@ -19,6 +20,7 @@ class Field(
 
   def toJson: JsObject = JsObject(properties.map(i => i._1 -> JsString(i._2)) ++ Map(
     "fieldId" -> JsNumber(fieldId),
+    "sourceId" -> JsNumber(sourceId),
     "fieldName" -> JsString(fieldName),
     "dataType" -> JsString(dataType),
     "valueType" -> JsString(valueType)
@@ -29,7 +31,7 @@ class Field(
 object Field {
   val LOG = LoggerFactory.getLogger(this.getClass)
 
-  private val listOfCols = Array("fieldId", "fieldName", "dataType", "valueType")
+  private val listOfCols = Array("fieldId", "fieldName", "dataType", "valueType", "sourceId")
 
   import spray.json._
 
@@ -39,6 +41,11 @@ object Field {
 
     val fieldId = if (jsObject.getFields("fieldId").nonEmpty)
       jsObject.getFields("fieldId").head.asInstanceOf[JsNumber].value.toLong
+    else
+      0
+
+    val sourceId = if (jsObject.getFields("sourceId").nonEmpty)
+      jsObject.getFields("sourceId").head.asInstanceOf[JsNumber].value.toLong
     else
       0
 
@@ -58,9 +65,10 @@ object Field {
       null
 
 
-    if (dataType != null && valueType != null && fieldName != null)
+    if (dataType != null && valueType != null && fieldName != null && sourceId != 0)
       new Field(
         fieldId = fieldId,
+        sourceId = sourceId,
         fieldName = fieldName,
         dataType = dataType,
         valueType = valueType,
@@ -81,6 +89,7 @@ object Field {
   def getFromResultSet(resultSet: ResultSet): Field = {
     try {
       val fieldId = resultSet.getLong("fieldId")
+      val sourceId = resultSet.getLong("sourceId")
       val fieldName = resultSet.getString("fieldName")
       val dataType = resultSet.getString("dataType")
       val valueType = resultSet.getString("valueType")
@@ -93,6 +102,7 @@ object Field {
 
       new Field(
         fieldId = fieldId,
+        sourceId = sourceId,
         fieldName = fieldName,
         dataType = dataType,
         valueType = valueType,
@@ -104,8 +114,9 @@ object Field {
     }
   }
 
-  def saveToDb(field: Field) = {
+  def saveToDb(field: Field): Long = {
     if (field.fieldId == 0) mysqlClient.insert("fields", Map(
+      "sourceId" -> field.sourceId,
       "fieldName" -> field.fieldName,
       "dataType" -> field.dataType,
       "valueType" -> field.valueType,
@@ -113,6 +124,7 @@ object Field {
     ))
     else mysqlClient.insert("fields", Map(
       "fieldId" -> field.fieldId,
+      "sourceId" -> field.sourceId,
       "fieldName" -> field.fieldName,
       "dataType" -> field.dataType,
       "valueType" -> field.valueType,
@@ -120,4 +132,13 @@ object Field {
     ))
   }
 
+  def getFieldsForSource(sourceId: Long): Array[Field] = {
+    val resultSet = mysqlClient.getResultSet("select * from fields where sourceId=" + sourceId)
+    val buf = scala.collection.mutable.ListBuffer.empty[Field]
+    while (resultSet.next) {
+      buf += getFromResultSet(resultSet)
+    }
+
+    buf.filter(_ != null).toArray
+  }
 }

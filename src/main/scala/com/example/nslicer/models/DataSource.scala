@@ -85,4 +85,27 @@ object DataSource {
     }
   }
 
+  def saveToDb(dataSource: DataSource): Long = {
+    if (dataSource.sourceId == 0) mysqlClient.insert("sources", Map(
+      "sourceName" -> dataSource.sourceName,
+      "sourceType" -> dataSource.sourceType,
+      "sourcePath" -> dataSource.sourcePath
+    ))
+    else mysqlClient.insert("fields", Map(
+      "sourceId" -> dataSource.sourceId,
+      "sourceName" -> dataSource.sourceName,
+      "sourceType" -> dataSource.sourceType,
+      "sourcePath" -> dataSource.sourcePath
+    ))
+  }
+
+  def prepareSource(source: DataSource): Unit = {
+    val fields: Array[Field] = Field.getFieldsForSource(source.sourceId)
+
+    val (categorical, continuous) = fields.partition(_.valueType == "continuous")
+
+    categorical.foreach(println)
+
+  }
+
 }

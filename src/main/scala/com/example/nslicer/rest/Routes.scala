@@ -1,7 +1,7 @@
 package com.example.nslicer.rest
 
 
-import com.example.nslicer.rest.handlers.DefaultHandler
+import com.example.nslicer.rest.handlers.{DataSourceHandler, DefaultHandler}
 import io.undertow.server.handlers.PathHandler
 
 /**
@@ -11,5 +11,11 @@ class Routes {
 
   def getAllHandlers = new PathHandler()
     .addExactPath("/", new DefaultHandler)
+    .addPrefixPath("api", apiHandler)
+
+
+  def apiHandler = new PathHandler()
+    .addExactPath("dataSource", new DataSourceHandler)
+
 
 }
