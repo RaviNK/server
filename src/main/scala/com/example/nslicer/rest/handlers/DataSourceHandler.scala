@@ -33,6 +33,7 @@ class DataSourceHandler extends HttpHandler {
           requestJson.getFields("action").head.asInstanceOf[JsString].value match {
             case "new" => DataSourceHandler.createDataSource(requestJson)
             case "prepare" => DataSourceHandler.prepareDataSource(requestJson)
+            case "get" => DataSourceHandler.getDataSource(requestJson)
             case _ => (0, null)
           }
 
@@ -90,6 +91,18 @@ object DataSourceHandler {
     }
 
     (0, null)
+  }
+
+  def getDataSource(requestJson: JsObject): (Int, JsObject) = {
+
+    val source = DataSource.getDataSource(
+      if (requestJson.getFields("sourceId").nonEmpty)
+        requestJson.getFields("sourceId").head.asInstanceOf[JsNumber].value.toLong
+      else 0
+    )
+    if (source != null) {
+      (200, JsObject("status" -> JsString("ok"), "data" -> source.toJson))
+    } else (0, null)
   }
 
 }

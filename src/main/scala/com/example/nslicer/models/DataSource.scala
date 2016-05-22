@@ -20,9 +20,11 @@ class DataSource(
     "sourceId" -> JsNumber(sourceId),
     "sourceName" -> JsString(sourceName),
     "sourceType" -> JsString(sourceType),
-    "sourcePath" -> JsString(sourcePath)
+    "sourcePath" -> JsString(sourcePath),
+    "fields" -> JsArray(getFields.map(_.toJson).toVector)
   )
 
+  def getFields: Array[Field] = Field.getFieldsForSource(sourceId)
 }
 
 

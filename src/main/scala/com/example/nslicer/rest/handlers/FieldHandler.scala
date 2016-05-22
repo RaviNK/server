@@ -34,6 +34,7 @@ class FieldHandler extends HttpHandler {
         val response = if (requestJson.getFields("action").nonEmpty) {
           requestJson.getFields("action").head.asInstanceOf[JsString].value match {
             case "new" => FieldHandler.createFieldHandler(requestJson)
+            case "newBatch" => FieldHandler.createBatchFieldHandler(requestJson)
             case "get" => FieldHandler.getFieldHandler(requestJson)
             case _ => (0, null)
           }
@@ -78,6 +79,25 @@ object FieldHandler {
     } else (0, JsObject())
   }
 
+
+  def createBatchFieldHandler(requestJson: JsObject): (Int, JsObject) = {
+    if (requestJson.getFields("data").nonEmpty) {
+      val fields = requestJson.getFields("data").head.asInstanceOf[JsArray].elements
+      (200, JsObject(
+        "status" -> JsString("ok"),
+        "data" -> JsArray(
+          fields.map(f => {
+            val field = Field.getField(Field.saveToDb(Field.fromJson(f.asJsObject)))
+
+            if (field != null)
+              field.toJson
+            else
+              null
+
+          }).filter(_ != null))))
+    } else (0, null)
+  }
+
   def getFieldHandler(requestJson: JsObject): (Int, JsObject) = {
     val fieldId = if (requestJson.getFields("fieldId").nonEmpty)
       requestJson.getFields("fieldId").head.asInstanceOf[JsNumber].value.toLong
@@ -88,4 +108,5 @@ object FieldHandler {
       (200, JsObject("status" -> JsString("ok"), "data" -> field.toJson))
     else (0, null)
   }
+
 }
