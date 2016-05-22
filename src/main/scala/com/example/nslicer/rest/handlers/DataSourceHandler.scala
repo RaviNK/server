@@ -86,11 +86,10 @@ object DataSourceHandler {
     } else 0
 
     val source = DataSource.getDataSource(sourceId)
-    if (source != null) {
-      DataSource.prepareSource(source)
-    }
-
-    (0, null)
+    if (source != null)
+      (200, DataSource.prepareSource(source))
+    else
+      (0, null)
   }
 
   def getDataSource(requestJson: JsObject): (Int, JsObject) = {

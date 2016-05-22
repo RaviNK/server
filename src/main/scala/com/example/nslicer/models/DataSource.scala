@@ -101,7 +101,7 @@ object DataSource {
     ))
   }
 
-  def prepareSource(source: DataSource): Unit = {
+  def prepareSource(source: DataSource): JsObject = {
 
     val fields: Array[Field] = Field.getFieldsForSource(source.sourceId)
 
@@ -110,7 +110,7 @@ object DataSource {
     val (dimensions, time) = tmp.partition(_.valueType.toLowerCase != "time")
 
     val dimensionSpec: JsObject = JsObject(
-      "dimensionsSpec" -> JsArray(dimensions.map(i => JsString(i.fieldName)).toVector)
+      "dimensions" -> JsArray(dimensions.map(i => JsString(i.fieldName)).toVector)
     )
 
     val timeSpec: JsObject = JsObject(
@@ -129,7 +129,42 @@ object DataSource {
       "name" -> JsString("count")
     )).toVector)
 
+    val parseSpec = JsObject(
+      "timestampSpec" -> timeSpec,
+      "dimensionsSpec" -> dimensionSpec,
+      "format" -> JsString("json")
+    )
 
+    val parser = JsObject(
+      "type" -> JsString("string"),
+      "parseSpec" -> parseSpec
+    )
+
+    val granularitySpec = "{\"type\": \"uniform\",\"segmentGranularity\": \"hour\",\"queryGranularity\": \"none\"}".parseJson.asJsObject
+
+    val dataSchema = JsObject(
+      "dataSource" -> JsString(source.sourceName),
+      "parser" -> parser,
+      "granularitySpec" -> granularitySpec,
+      "metricsSpec" -> metricsSpec
+    )
+
+    val ioConfig = JsObject("type" -> JsString("realtime"))
+    val tuningConfig = "{\"type\":\"realtime\",\"maxRowsInMemory\":\"100000\",\"intermediatePersistPeriod\":\"PT10M\",\"windowPeriod\":\"PT10M\"}".parseJson.asJsObject
+    val spec = JsObject(
+      "ioConfig" -> ioConfig,
+      "tuningConfig" -> tuningConfig,
+      "dataSchema" -> dataSchema
+    )
+
+    val properties = "{\"zookeeper.connect\":\"localhost\",\"druid.discovery.curator.path\":\"/druid/discovery\",\"druid.selectors.indexing.serviceName\":\"druid/overlord\",\"commit.periodMillis\":\"15000\",\"consumer.numThreads\":\"2\",\"kafka.zookeeper.connect\":\"localhost\",\"kafka.group.id\":\"tranquility-kafka\"}".parseJson.asJsObject
+
+    val finalJson = JsObject(
+      "type" -> JsString("index_realtime"),
+      "spec" -> spec,
+      "properties" -> properties
+    )
+    finalJson
   }
 
 }
