@@ -37,7 +37,10 @@ object Field {
 
   def fromJson(jsObject: JsObject): Field = {
 
-    val properties = jsObject.fields.filter(i => listOfCols.contains(i._1)).map(i => i._1 -> i._2.asInstanceOf[JsString].value)
+    val properties = jsObject.fields.filter(i => listOfCols.contains(i._1)).map(i => i._1 -> (i._2 match {
+      case v: JsString => v.value
+      case v: JsNumber => v.value.toString
+    }))
 
     val fieldId = if (jsObject.getFields("fieldId").nonEmpty)
       jsObject.getFields("fieldId").head.asInstanceOf[JsNumber].value.toLong

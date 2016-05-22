@@ -2,7 +2,6 @@ package com.example.nslicer.connectors
 
 import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet}
 
-import com.google.inject.Inject
 import com.typesafe.config.Config
 import org.slf4j.{Logger, LoggerFactory}
 import spray.json.{JsArray, JsObject}

@@ -1,16 +1,18 @@
 package com.example.nslicer.rest.handlers
 
-import com.example.nslicer.models.DataSource
-import org.slf4j.LoggerFactory
-import spray.json._
+
+import com.example.nslicer.models.Field
 import com.example.nslicer.utils.UNDERTOW_HELPERS
 import io.undertow.server.{HttpServerExchange, HttpHandler}
 import org.apache.commons.io.IOUtils
+import spray.json.{JsObject, JsString}
+import spray.json._
 
 /**
   * Created by vishnu on 21/5/16.
   */
-class DataSourceHandler extends HttpHandler {
+class FieldHandler extends HttpHandler {
+
   override def handleRequest(exchange: HttpServerExchange): Unit = {
 
     try {
@@ -31,8 +33,8 @@ class DataSourceHandler extends HttpHandler {
 
         val response = if (requestJson.getFields("action").nonEmpty) {
           requestJson.getFields("action").head.asInstanceOf[JsString].value match {
-            case "new" => DataSourceHandler.createDataSource(requestJson)
-            case "prepare" => DataSourceHandler.prepareDataSource(requestJson)
+            case "new" => FieldHandler.createFieldHandler(requestJson)
+            case "get" => FieldHandler.getFieldHandler(requestJson)
             case _ => (0, null)
           }
 
@@ -58,38 +60,32 @@ class DataSourceHandler extends HttpHandler {
     }
 
   }
+
 }
 
-object DataSourceHandler {
-  val LOG = LoggerFactory.getLogger(this.getClass)
-
-
-  def createDataSource(requestJson: JsObject): (Int, JsObject) = {
-
+object FieldHandler {
+  def createFieldHandler(requestJson: JsObject): (Int, JsObject) = {
     if (requestJson.getFields("data").nonEmpty) {
-      var dataSource = DataSource.fromJson(requestJson.getFields("data").head.asJsObject)
+      var field = Field.fromJson(requestJson.getFields("data").head.asJsObject)
 
-      dataSource = DataSource.getDataSource(DataSource.saveToDb(dataSource))
+      field = Field.getField(Field.saveToDb(field))
 
-      if (dataSource != null) {
-        (200, JsObject("status" -> JsString("ok"), "data" -> dataSource.toJson))
+      if (field != null) {
+        (200, JsObject("status" -> JsString("ok"), "data" -> field.toJson))
       } else {
         (500, JsObject(Map("status" -> JsString("failed"), "message" -> JsString("Unable to save Please Try again"))))
       }
     } else (0, JsObject())
   }
 
-  def prepareDataSource(requestJson: JsObject): (Int, JsObject) = {
-    val sourceId = if (requestJson.getFields("sourceId").nonEmpty) {
-      requestJson.getFields("sourceId").head.asInstanceOf[JsNumber].value.toLong
-    } else 0
+  def getFieldHandler(requestJson: JsObject): (Int, JsObject) = {
+    val fieldId = if (requestJson.getFields("fieldId").nonEmpty)
+      requestJson.getFields("fieldId").head.asInstanceOf[JsNumber].value.toLong
+    else 0
 
-    val source = DataSource.getDataSource(sourceId)
-    if (source != null) {
-      DataSource.prepareSource(source)
-    }
-
-    (0, null)
+    val field = Field.getField(fieldId)
+    if (field != null)
+      (200, JsObject("status" -> JsString("ok"), "data" -> field.toJson))
+    else (0, null)
   }
-
 }

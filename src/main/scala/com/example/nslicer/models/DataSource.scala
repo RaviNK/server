@@ -4,7 +4,7 @@ import java.sql.ResultSet
 
 import com.example.nslicer.BootStrapServer._
 import org.slf4j.LoggerFactory
-import spray.json.{JsNumber, JsString, JsObject}
+import spray.json._
 
 /**
   * Created by vishnu on 21/5/16.
@@ -60,7 +60,7 @@ object DataSource {
   }
 
   def getDataSource(sourceId: Long) = {
-
+    println("Getting dataSource")
     val resultSet = mysqlClient.getResultSet("select * from sources where sourceId=" + sourceId)
 
     if (resultSet.next()) getFromResultSet(resultSet) else null
@@ -100,11 +100,33 @@ object DataSource {
   }
 
   def prepareSource(source: DataSource): Unit = {
+
     val fields: Array[Field] = Field.getFieldsForSource(source.sourceId)
 
-    val (categorical, continuous) = fields.partition(_.valueType == "continuous")
+    val (tmp, measures) = fields.partition(_.valueType.toLowerCase != "measure")
 
-    categorical.foreach(println)
+    val (dimensions, time) = tmp.partition(_.valueType.toLowerCase != "time")
+
+    val dimensionSpec: JsObject = JsObject(
+      "dimensionsSpec" -> JsArray(dimensions.map(i => JsString(i.fieldName)).toVector)
+    )
+
+    val timeSpec: JsObject = JsObject(
+      "format" -> JsString("auto"),
+      "column" -> JsString(time.head.fieldName)
+    )
+
+    val metricsSpec: JsArray = JsArray((measures.map(field => {
+      JsObject(
+        "type" -> JsString(if (field.dataType.toLowerCase == "double") "doubleSum" else "longSum"),
+        "name" -> JsString(field.fieldName + "Sum"),
+        "fieldName" -> JsString(field.fieldName)
+      )
+    }) :+ JsObject(
+      "type" -> JsString("count"),
+      "name" -> JsString("count")
+    )).toVector)
+
 
   }
 
